@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeSpends Payday — Budget and Planner</title>
+<style>
+  :root{
+    --bg:#F7F5F0; --card:#FFFFFF; --ink:#222222; --muted:#667085;
+    --accent:#D97706; --accent-ink:#FFFFFF; --soft:#F1EDE6; --line:#E5E0D5;
+    --good:#2E7D32; --warn:#D97706;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:16px;line-height:1.5}
+  body.text2{font-size:18px} body.text3{font-size:20px}
+  body.easy{font-family:Verdana,Geneva,Tahoma,sans-serif}
+  body.hideamounts .amt{visibility:hidden}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 18px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .mark{width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+  .brand b{font-size:19px} .brand span{display:block;font-size:13px;color:var(--muted)}
+  button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--soft);
+    color:var(--ink);border-radius:10px;padding:9px 14px}
+  button.primary,.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+  button.small{padding:6px 10px;font-size:14px}
+  input,select{font:inherit;background:var(--soft);color:var(--ink);border:1px solid var(--line);
+    border-radius:10px;padding:9px 10px;width:100%}
+  label{font-size:14px;color:var(--muted);display:block;margin:8px 0 4px}
+  .hero{background:var(--accent);color:var(--accent-ink);border-radius:16px;padding:22px;margin-bottom:16px}
+  .hero .kick{font-size:13px;font-weight:700;letter-spacing:.04em}
+  .hero .bignum{font-size:52px;line-height:1.1;font-weight:800;margin:4px 0}
+  .hero .pace{font-size:15px} .hero .math{font-size:14px;opacity:.85;margin-top:6px}
+  .hero .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .hero button{background:var(--accent-ink);color:var(--ink);border-color:var(--accent-ink)}
+  .hero button.ghost{background:transparent;color:var(--accent-ink);border-color:var(--accent-ink)}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:960px){ .grid{grid-template-columns:1fr 1fr} .span2{grid-column:1 / -1} }
+  section.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+  section.card h2{margin:0 0 4px;font-size:20px}
+  section.card p.lead{margin:0 0 12px;color:var(--muted);font-size:15px}
+  .rowline{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .rowline:last-child{border-bottom:0}
+  .rowline .sub{color:var(--muted);font-size:13px}
+  .barwrap{height:14px;background:var(--soft);border-radius:8px;overflow:hidden;margin:6px 0}
+  .barfill{height:100%;background:var(--accent)}
+  .ring{display:flex;align-items:center;gap:12px}
+  .ring svg{flex:0 0 auto}
+  .fchart{display:flex;align-items:flex-end;gap:2px;height:110px;margin:10px 0}
+  .fbar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:4px}
+  .fbar.low{background:#E07A5F} .fbar.pay{background:var(--good)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:13px}
+  .cal .d{padding:7px 0;border-radius:8px;background:var(--soft)}
+  .cal .d.pay{outline:2px solid var(--good)} .cal .d.due{outline:2px solid var(--accent)}
+  .cal .d.paid{opacity:.55}
+  .warnbox{background:#FDF3DC;border:1px solid var(--accent);border-radius:12px;padding:12px;margin:10px 0}
+  .note{color:var(--muted);font-size:14px}
+  .overnote{color:var(--accent);font-size:14px}
+  .simplepanel{display:none}
+  body.simple .grid{display:none}
+  body.simple .simplepanel{display:block}
+  body.simple .hero .row{display:none}
+  body.simple .hero .simpleactions{display:flex}
+  .simpleactions{display:none;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .simpleactions button{background:var(--accent-ink);color:var(--ink);border-color:var(--accent-ink)}
+  .hidden{display:none!important}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:22px 10px 30px}
+  .pill{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+  .side{display:none}
+  .nav,.sheet,.sheet-overlay{display:none}
+  @media (min-width:960px){
+    .side{display:block;position:fixed;left:0;top:0;bottom:0;width:248px;background:var(--card);border-right:1px solid var(--line);padding:18px 14px;overflow-y:auto}
+    .sidebrand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+    .sidebrand b{font-size:17px} .sidebrand span{display:block;font-size:12px;color:var(--muted)}
+    .sidegroup{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:16px 8px 6px}
+    .side a{display:block;padding:8px 10px;border-radius:9px;color:var(--ink);text-decoration:none;font-size:15px}
+    .side a:hover{background:var(--soft)}
+    .side a.on{background:var(--soft);font-weight:700}
+    .wrap{margin-left:248px}
+    .nav,.sheet,.sheet-overlay{display:none!important}
+  }
+  @media (max-width:959px){
+    header.top{flex-wrap:wrap}
+    .brand b{font-size:17px}
+    .hero .bignum{font-size:44px}
+    .wrap{padding-bottom:88px}
+    .rowline{flex-wrap:wrap}
+    .nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+    .nav button{flex:1;border:0;background:transparent;color:var(--muted);font-size:12px;padding:8px 2px 6px;border-radius:10px}
+    .nav button.on{color:var(--accent);font-weight:700}
+    .nav button.plus{flex:0 0 56px;height:56px;margin-top:-28px;border-radius:50%;background:var(--accent);color:#fff;font-size:26px;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+    .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60}
+    .sheet-overlay.open{display:block}
+    .sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--card);border-radius:20px 20px 0 0;max-height:85vh;overflow-y:auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+    .sheet.open{display:block}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 10px}
+    .sheet-head b{font-size:18px}
+    .sheet-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 4px;color:var(--ink)}
+    .sheet-row .t b{display:block;font-size:15px}
+    .sheet-row .t span{display:block;font-size:13px;color:var(--muted)}
+    .sheet-row .chev{font-size:20px;color:var(--muted)}
+  }
+</style>
+</head>
+<body>
+<nav class="side" id="sideMenu">
+  <div class="sidebrand"><div class="mark">S</div><div><b>SafeSpends Payday</b><span>Budget and Planner</span></div></div>
+  <div class="sidegroup">MONEY</div>
+  <a href="#sec-safe" data-nav="sec-safe">Safe to Spend</a>
+  <a href="#sec-forecast" data-nav="sec-forecast">Forecast · 45 days</a>
+  <a href="#sec-whatif" data-nav="sec-whatif">What-if tester</a>
+  <a href="#sec-paycheck" data-nav="sec-paycheck">Paycheck</a>
+  <div class="sidegroup">TRACKING</div>
+  <a href="#sec-bills" data-nav="sec-bills">Bills</a>
+  <a href="#sec-spending" data-nav="sec-spending">Spending log</a>
+  <a href="#sec-envelopes" data-nav="sec-envelopes">Envelopes</a>
+  <div class="sidegroup">PLANS</div>
+  <a href="#sec-debts" data-nav="sec-debts">Debts</a>
+  <a href="#sec-goals" data-nav="sec-goals">Savings goals</a>
+  <a href="#sec-wrapped" data-nav="sec-wrapped">Monthly Wrapped</a>
+  <div class="sidegroup">YOUR DATA</div>
+  <a href="#sec-backup" data-nav="sec-backup">Backup</a>
+  <a href="#sec-settings" data-nav="sec-settings">Settings</a>
+</nav>
+<div class="wrap">
+  <div style="background:#D97706;color:#fff;text-align:center;font-weight:700;padding:10px 12px;border-radius:12px;margin-bottom:14px">DEMO — This is the free demo with sample data. Nothing you change here is saved. · Full version: SafeSpendsStudio on Etsy</div>
+  <header class="top">
+    <div class="brand"><div class="mark">S</div><div><b>SafeSpends Payday</b><span>Budget and Planner</span></div></div>
+    <button id="simpleBtn" class="small" onclick="toggleSimple()">Simple view</button>
+  </header>
+  <div class="hero" id="sec-safe">
+    <div class="kick">SAFE TO SPEND TODAY</div>
+    <div class="bignum amt" id="heroSafe">$0.00</div>
+    <div class="pace" id="heroPace"></div>
+    <div class="math" id="heroMath"></div>
+    <div class="row" id="quickRow">
+      <input id="qAmt" type="number" min="0" step="0.01" placeholder="Amount" style="max-width:130px">
+      <select id="qAcct" style="max-width:170px"></select>
+      <select id="qCat" style="max-width:170px"></select>
+      <button onclick="quickLog()">Log a spend</button>
+    </div>
+    <div class="simpleactions" id="simpleActions">
+      <button onclick="showSimplePanel('log')">Log a spend</button>
+      <button onclick="showSimplePanel('bills')">Mark a bill paid</button>
+      <button onclick="showSimplePanel('forecast')">View forecast</button>
+    </div>
+    <div id="quickMsg" class="note" style="color:inherit;margin-top:8px"></div>
+  </div>
+
+  <div class="simplepanel" id="simplePanelLog">
+    <section class="card">
+      <h2>Log a spend</h2>
+      <label>Amount</label><input id="sAmt" type="number" min="0" step="0.01">
+      <label>Account</label><select id="sAcct"></select>
+      <label>Category</label><select id="sCat"></select>
+      <button class="primary" style="margin-top:12px" onclick="simpleLog()">Log it</button>
+      <div id="sMsg" class="note" style="margin-top:8px"></div>
+    </section>
+  </div>
+  <div class="simplepanel" id="simplePanelBills">
+    <section class="card">
+      <h2>Mark a bill paid</h2>
+      <div id="simpleBills"></div>
+    </section>
+  </div>
+  <div class="simplepanel" id="simplePanelForecast">
+    <section id="sec-forecast" class="card">
+      <h2>Your next 45 days</h2>
+      <div id="simpleForecastBars" class="fchart"></div>
+      <div id="simpleForecastText" class="note"></div>
+    </section>
+  </div>
+
+  <div class="grid" id="fullGrid">
+    <section id="sec-forecast" class="card span2">
+      <h2>Your next 45 days</h2>
+      <p class="lead">Every bill and every paycheck, day by day. The lowest day is marked, and any tight stretch is warned about before it arrives.</p>
+      <div id="fBars" class="fchart"></div>
+      <div id="fText" class="note"></div>
+      <div id="fWarn"></div>
+    </section>
+
+    <section id="sec-whatif" class="card">
+      <h2>Try a what-if</h2>
+      <p class="lead">Thinking about a purchase? See what it does to your number before any money moves.</p>
+      <label>Purchase amount</label>
+      <input id="wiAmt" type="number" min="0" step="0.01" placeholder="e.g. 120">
+      <button class="primary" style="margin-top:12px" onclick="runWhatIf()">See the effect</button>
+      <div id="wiOut" class="note" style="margin-top:10px"></div>
+    </section>
+
+    <section id="sec-paycheck" class="card">
+      <h2>Your paycheck</h2>
+      <p class="lead">How often you are paid, what you take home, and when it next lands.</p>
+      <label>How often are you paid?</label>
+      <select id="pfFreq" onchange="changeFreq()">
+        <option value="weekly">Weekly</option>
+        <option value="biweekly" selected>Biweekly (every 2 weeks)</option>
+        <option value="twiceamonth">Twice a month (1st and 15th)</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <label>Take-home amount per paycheck</label>
+      <input id="pfAmount" type="number" min="0" step="0.01">
+      <label>Next payday</label>
+      <input id="pfNext" type="date">
+      <label>Savings set aside per paycheck</label>
+      <input id="pfSave" type="number" min="0" step="0.01">
+      <button class="primary" style="margin-top:12px" onclick="savePaycheck()">Save paycheck details</button>
+      <div id="pfMsg" class="note" style="margin-top:8px"></div>
+      <div style="margin-top:12px"><span class="pill" id="paydayList"></span></div>
+    </section>
+
+    <section id="sec-bills" class="card">
+      <h2>Bills</h2>
+      <p class="lead">What is due, what is paid, and what is still to land.</p>
+      <div id="billList"></div>
+      <label>Bill name</label><input id="bName" placeholder="e.g. Rent">
+      <label>Amount</label><input id="bAmt" type="number" min="0" step="0.01">
+      <label>Due date</label><input id="bDue" type="date">
+      <button class="primary" style="margin-top:12px" onclick="addBill()">Add bill</button>
+      <div style="margin-top:16px"><h3 style="margin:0 0 6px;font-size:16px">Month calendar</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <button class="small" onclick="calMove(-1)">Prev</button>
+        <span id="calTitle"></span>
+        <button class="small" onclick="calMove(1)">Next</button>
+      </div>
+      <div class="cal" id="calGrid"></div>
+      <p class="note">Outlined in green: payday. Outlined in amber: bill due. Faded: already paid.</p></div>
+    </section>
+
+    <section id="sec-spending" class="card">
+      <h2>Spending log</h2>
+      <p class="lead">Every spend, dated, with the account it came from. This log also feeds your envelopes and your Wrapped report.</p>
+      <div id="spendList"></div>
+      <p class="note" id="spendTotals"></p>
+    </section>
+
+    <section id="sec-envelopes" class="card">
+      <h2>Envelopes</h2>
+      <p class="lead">A monthly cap per category, with spent against cap shown plainly.</p>
+      <div id="envList"></div>
+    </section>
+
+    <section id="sec-debts" class="card">
+      <h2>Debts</h2>
+      <p class="lead">Two payoff orders, one slider, and the date each path sets you free.</p>
+      <div id="debtList"></div>
+      <label>Extra payment per month</label>
+      <input id="debtExtra" type="range" min="0" max="300" step="5" value="0" oninput="renderDebts()">
+      <div class="note" id="debtExtraLabel">Extra: $0 / month</div>
+      <div id="debtSim" class="note" style="margin-top:8px"></div>
+      <label>Debt name</label><input id="dName" placeholder="e.g. Card">
+      <label>Balance</label><input id="dBal" type="number" min="0" step="0.01">
+      <label>APR %</label><input id="dApr" type="number" min="0" step="0.1">
+      <label>Minimum payment / month</label><input id="dMin" type="number" min="0" step="0.01">
+      <button class="primary" style="margin-top:12px" onclick="addDebt()">Add debt</button>
+    </section>
+
+    <section id="sec-goals" class="card">
+      <h2>Savings goals</h2>
+      <p class="lead">Named goals with progress rings and the date each one is funded by.</p>
+      <div id="goalList"></div>
+      <label>Goal name</label><input id="gName" placeholder="e.g. Holiday">
+      <label>Target</label><input id="gTarget" type="number" min="0" step="0.01">
+      <label>Already saved</label><input id="gSaved" type="number" min="0" step="0.01">
+      <label>Amount added per month</label><input id="gMonthly" type="number" min="0" step="0.01">
+      <button class="primary" style="margin-top:12px" onclick="addGoal()">Add goal</button>
+    </section>
+
+    <section id="sec-wrapped" class="card">
+      <h2>Monthly Wrapped</h2>
+      <p class="lead">A payday report from your real data: what you kept, your no-spend days, and your best month yet.</p>
+      <div id="wrappedBox"></div>
+    </section>
+
+    <section id="sec-backup" class="card">
+      <h2>Backup</h2>
+      <p class="lead">Your data lives on your own device. A backup file moves it to a new phone or computer in minutes.</p>
+      <button onclick="doBackupExport()">Export backup (JSON)</button>
+      <button onclick="doCsvExport()">Export spends (CSV)</button>
+      <label style="margin-top:12px">Import a backup file</label>
+      <input type="file" id="impFile" accept=".json,application/json" onchange="doBackupImport(event)">
+      <div class="note" id="backupInfo" style="margin-top:10px"></div>
+      <div id="backupWarn"></div>
+    </section>
+
+    <section id="sec-settings" class="card span2">
+      <h2>Settings</h2>
+      <p class="lead">Currency, text size, and a fresh start when you want one.</p>
+      <label>Currency</label>
+      <select id="setCur" onchange="changeCurrency()">
+        <option value="USD" selected>USD ($)</option>
+        <option value="EUR">EUR (€)</option>
+        <option value="GBP">GBP (£)</option>
+        <option value="PKR">PKR (Rs)</option>
+        <option value="INR">INR (₹)</option>
+        <option value="JPY">JPY (¥)</option>
+        <option value="CAD">CAD (CA$)</option>
+        <option value="AUD">AUD (A$)</option>
+      </select>
+      <label>Text size</label>
+      <select id="setText" onchange="changeTextSize()">
+        <option value="1" selected>Normal</option>
+        <option value="2">Larger</option>
+        <option value="3">Largest</option>
+      </select>
+      <div style="margin-top:12px">
+        <button class="small" id="easyBtn" onclick="toggleEasy()">Easy-read font: off</button>
+        <button class="small" id="hideBtn" onclick="toggleHide()">Hide amounts: off</button>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+        <h3 style="margin:0 0 4px;font-size:16px">Start fresh</h3>
+        <p class="note">Removes every bill, spend, debt, goal, and envelope on this device and starts empty.</p>
+        <button onclick="clearAll()">Clear everything</button>
+      </div>
+    </section>
+  </div>
+
+  <footer>SafeSpends is a budgeting tool, not financial advice. It is designed with ADHD brains in mind; it does not diagnose or treat ADHD.</footer>
+</div>
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<nav class="nav" id="bottomNav">
+  <button data-nav="sec-safe">Safe</button>
+  <button data-nav="sec-bills">Bills</button>
+  <button class="plus" onclick="openSheet()" aria-label="All of your planner">+</button>
+  <button data-nav="sec-debts">Debts</button>
+  <button data-nav="sec-goals">Goals</button>
+</nav>
+<div class="sheet" id="sheet">
+  <div class="sheet-head"><b>All of your planner</b><button class="small" onclick="closeSheet()">✕</button></div>
+  <button class="sheet-row" data-log="1"><span class="t"><b>Log a spend</b><span>Amount, account and category — in seconds</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-safe"><span class="t"><b>Safe to Spend</b><span>One calm number for today</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-forecast"><span class="t"><b>Forecast · 45 days</b><span>Balance bars with warnings before tight days</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-whatif"><span class="t"><b>What-if tester</b><span>Try a purchase before you make it</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-paycheck"><span class="t"><b>Paycheck</b><span>Take-home, frequency and next payday</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-bills"><span class="t"><b>Bills</b><span>Due, paid and still to land</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-spending"><span class="t"><b>Spending log</b><span>Every spend, dated and totalled</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-envelopes"><span class="t"><b>Envelopes</b><span>Monthly caps per category</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-debts"><span class="t"><b>Debts</b><span>Snowball, avalanche and debt-free date</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-goals"><span class="t"><b>Savings goals</b><span>Rings and funded-by dates</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-wrapped"><span class="t"><b>Monthly Wrapped</b><span>Kept, no-spend days and best month</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-backup"><span class="t"><b>Backup</b><span>JSON and CSV exports</span></span><span class="chev">›</span></button>
+  <button class="sheet-row" data-nav="sec-settings"><span class="t"><b>Settings</b><span>Currency, text size and fresh start</span></span><span class="chev">›</span></button>
+</div>
+<script>
+var KEY='safespends.payday';
+var SYM={USD:'$',EUR:'€',GBP:'£',PKR:'Rs ',INR:'₹',JPY:'¥',CAD:'CA$',AUD:'A$'};
+function todayMid(){var d=new Date();d.setHours(0,0,0,0);return d;}
+function parseD(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function dayDiff(a,b){return Math.round((b-a)/86400000);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function money(n){var s=S.settings.currency;var v=(Math.round(n*100)/100).toFixed(2);return SYM[s]+v;}
+function uid(){return 'x'+Math.random().toString(36).slice(2,9);}
+
+var DEFAULTS={
+  settings:{takeHome:1600,freq:'biweekly',nextPayday:'2026-11-06',saveAside:300,currency:'USD',textSize:1,easyFont:false,hideAmounts:false,lastBackup:null},
+  accounts:[{id:'a1',name:'Checking',balance:1240},{id:'a2',name:'Savings',balance:840},{id:'a3',name:'Cash',balance:120}],
+  bills:[
+    {id:'b1',name:'Rent',amount:720,due:'2026-11-03',paid:false},
+    {id:'b2',name:'Internet',amount:60,due:'2026-11-05',paid:false},
+    {id:'b3',name:'Electric',amount:95,due:'2026-11-09',paid:false},
+    {id:'b4',name:'Phone',amount:45,due:'2026-11-12',paid:false}
+  ],
+  spends:[
+    {id:'s1',amount:54,cat:'Groceries',acct:'Checking',date:'2026-10-23'},
+    {id:'s2',amount:32,cat:'Fuel',acct:'Checking',date:'2026-10-24'},
+    {id:'s3',amount:41,cat:'Groceries',acct:'Checking',date:'2026-10-27'},
+    {id:'s4',amount:12,cat:'Fun',acct:'Cash',date:'2026-10-28'}
+  ],
+  envelopes:[
+    {id:'e1',cat:'Groceries',cap:320},
+    {id:'e2',cat:'Fuel',cap:140},
+    {id:'e3',cat:'Fun',cap:90}
+  ],
+  debts:[
+    {id:'d1',name:'Card',balance:1150,apr:22,min:35},
+    {id:'d2',name:'Loan',balance:2400,apr:9,min:80}
+  ],
+  goals:[
+    {id:'g1',name:'Emergency fund',target:1000,saved:340,monthly:100},
+    {id:'g2',name:'Holiday',target:600,saved:120,monthly:50}
+  ],
+  cats:['Groceries','Fuel','Fun','Bills','Other']
+};
+var S;
+function load(){
+  try{var raw=null;if(raw){S=JSON.parse(raw);return;}}catch(e){}
+  S=JSON.parse(JSON.stringify(DEFAULTS));
+}
+function save(){}
+load();
+
+function totalBalance(){return S.accounts.reduce(function(a,x){return a+x.balance;},0);}
+function nextPaydayDate(){return parseD(S.settings.nextPayday);}
+function daysToPayday(){
+  var d=dayDiff(todayMid(),nextPaydayDate());
+  return d<0?0:d;
+}
+function billsDueBeforePayday(){
+  var np=nextPaydayDate();
+  return S.bills.filter(function(b){return !b.paid&&parseD(b.due)<np;});
+}
+function minDebtTotal(){return S.debts.reduce(function(a,x){return a+x.min;},0);}
+function computeSafe(){
+  var num=totalBalance()
+    - billsDueBeforePayday().reduce(function(a,b){return a+b.amount;},0)
+    - minDebtTotal() - S.settings.saveAside;
+  if(num<0)num=0;
+  var days=daysToPayday();
+  var per=days>0?num/days:num;
+  return {total:num,perDay:per,days:days};
+}
+function perDayPace(){
+  var c=computeSafe();
+  return c.days>0?c.perDay:0;
+}
+
+/* Payday generation for each frequency. anchor = stored next payday. */
+function paydayList(freq,anchor,count){
+  var out=[];var a=new Date(anchor);
+  if(freq==='weekly'||freq==='biweekly'){
+    var step=freq==='weekly'?7:14;
+    var d=new Date(a);
+    for(var i=0;i<count;i++){out.push(new Date(d));d=addDays(d,step);}
+  }else if(freq==='monthly'){
+    var d=new Date(a);
+    for(var i=0;i<count;i++){out.push(new Date(d));d=new Date(d.getFullYear(),d.getMonth()+1,d.getDate());}
+  }else if(freq==='twiceamonth'){
+    var y=a.getFullYear(),m=a.getMonth();
+    while(out.length<count){
+      var cands=[new Date(y,m,1),new Date(y,m,15)];
+      for(var j=0;j<2&&out.length<count;j++){
+        if(cands[j]>=a)out.push(cands[j]);
+      }
+      m++;if(m>11){m=0;y++;}
+    }
+  }
+  return out;
+}
+function lastPayday(){
+  var freq=S.settings.freq,anchor=nextPaydayDate(),t=todayMid();
+  if(freq==='weekly'||freq==='biweekly'){
+    var step=freq==='weekly'?7:14;var d=new Date(anchor);
+    while(addDays(d,step)<=t)d=addDays(d,step);
+    while(d>t)d=addDays(d,-step);
+    return d;
+  }
+  if(freq==='monthly'){
+    var d=new Date(anchor);
+    while(new Date(d.getFullYear(),d.getMonth()+1,d.getDate())<=t)d=new Date(d.getFullYear(),d.getMonth()+1,d.getDate());
+    while(d>t)d=new Date(d.getFullYear(),d.getMonth()-1,d.getDate());
+    return d;
+  }
+  var y=anchor.getFullYear(),m=anchor.getMonth(),best=new Date(anchor);
+  for(var k=0;k<24;k++){
+    var c1=new Date(y,m,1),c15=new Date(y,m,15);
+    if(c1<=t&&c1>=anchor)best=c1;
+    if(c15<=t&&c15>=anchor)best=c15;
+    m++;if(m>11){m=0;y++;}
+  }
+  return best;
+}
+
+/* 45-day forecast: balance walk from today, paychecks in, unpaid bills out. */
+function forecast45(){
+  var pays=paydayList(S.settings.freq,nextPaydayDate(),8);
+  var paySet={};pays.forEach(function(d){paySet[fmtDate(d)]=true;});
+  var billByDate={};
+  S.bills.forEach(function(b){if(!b.paid){billByDate[b.due]=(billByDate[b.due]||0)+b.amount;}});
+  var bal=totalBalance();var rows=[];
+  for(var i=1;i<=45;i++){
+    var d=addDays(todayMid(),i);var key=fmtDate(d);
+    if(paySet[key])bal+=S.settings.takeHome;
+    if(billByDate[key])bal-=billByDate[key];
+    rows.push({date:d,balance:bal,pay:!!paySet[key],bill:billByDate[key]||0});
+  }
+  return rows;
+}
+function forecastLow(rows){
+  var low=rows[0];
+  rows.forEach(function(r){if(r.balance<low.balance)low=r;});
+  return low;
+}
+function whatIf(amount){
+  var c=computeSafe();
+  var num=c.total-amount;if(num<0)num=0;
+  var per=c.days>0?num/c.days:num;
+  var rows=forecast45();var low=forecastLow(rows);
+  return {safe:per,low:low.balance-amount,lowDate:low.date};
+}
+function monthsToPayoff(debts,order,extra){
+  var ds=debts.map(function(d){return {bal:d.balance,apr:d.apr,min:d.min};});
+  var orderIdx=order.map(function(o){return debts.indexOf(o);});
+  var months=0,interest=0;
+  while(ds.some(function(d){return d.bal>0.005;})&&months<600){
+    months++;
+    ds.forEach(function(d){if(d.bal>0){var it=d.bal*d.apr/100/12;interest+=it;d.bal+=it;}});
+    var extraLeft=extra;
+    orderIdx.forEach(function(ix){
+      var d=ds[ix];if(d.bal<=0)return;
+      var pay=d.min+(ix===orderIdx[0]?extraLeft:0);
+      if(ix===orderIdx[0])extraLeft=0;
+      d.bal=Math.max(0,d.bal-pay);
+    });
+  }
+  return {months:months,interest:interest};
+}
+function debtSim(){
+  if(!S.debts.length)return null;
+  var snow=S.debts.slice().sort(function(a,b){return a.balance-b.balance;});
+  var aval=S.debts.slice().sort(function(a,b){return b.apr-a.apr;});
+  var extra=+(document.getElementById('debtExtra')?document.getElementById('debtExtra').value:0)||0;
+  var s0=monthsToPayoff(S.debts,snow,0),s1=monthsToPayoff(S.debts,snow,extra);
+  var a0=monthsToPayoff(S.debts,aval,0),a1=monthsToPayoff(S.debts,aval,extra);
+  return {snow:snow,aval:aval,extra:extra,s0:s0,s1:s1,a0:a0,a1:a1};
+}
+function fundedByDate(g){
+  if(g.saved>=g.target)return todayMid();
+  if(!g.monthly||g.monthly<=0)return null;
+  var m=Math.ceil((g.target-g.saved)/g.monthly);
+  var d=new Date(todayMid());d=new Date(d.getFullYear(),d.getMonth()+m,d.getDate());
+  return d;
+}
+function wrapped(){
+  var lp=lastPayday();var t=todayMid();
+  var inPeriod=S.spends.filter(function(s){var d=parseD(s.date);return d>=lp&&d<t;});
+  var spent=inPeriod.reduce(function(a,s){return a+s.amount;},0);
+  var days=dayDiff(lp,t);var spentDays={};
+  inPeriod.forEach(function(s){spentDays[s.date]=true;});
+  var noSpend=0;
+  for(var i=0;i<days;i++){var key=fmtDate(addDays(lp,i));if(!spentDays[key])noSpend++;}
+  var byMonth={};
+  S.spends.forEach(function(s){var k=s.date.slice(0,7);byMonth[k]=(byMonth[k]||0)+s.amount;});
+  var best=null,bestAmt=null;
+  Object.keys(byMonth).forEach(function(k){if(bestAmt===null||byMonth[k]<bestAmt){best=k;bestAmt=byMonth[k];}});
+  return {kept:S.settings.saveAside,spent:spent,noSpend:noSpend,best:best,bestAmt:bestAmt,from:lp,to:t};
+}
+
+function acctOptions(sel){
+  sel.innerHTML=S.accounts.map(function(a){return '<option value="'+esc(a.name)+'">'+esc(a.name)+' ('+money(a.balance)+')</option>';}).join('');
+}
+function catOptions(sel){
+  sel.innerHTML=S.cats.map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
+}
+function renderHero(){
+  var c=computeSafe();
+  document.getElementById('heroSafe').textContent=money(c.perDay);
+  document.getElementById('heroPace').textContent='Your pace until payday: '+money(c.perDay)+' a day · Payday in '+c.days+' day'+(c.days===1?'':'s');
+  var due=billsDueBeforePayday().reduce(function(a,b){return a+b.amount;},0);
+  document.getElementById('heroMath').textContent='Worked out: '+money(totalBalance())+' balance − '+money(due)+' bills due before payday − '+money(minDebtTotal())+' minimum debt payments − '+money(S.settings.saveAside)+' set aside = '+money(c.total)+' ÷ '+c.days+' days.';
+  acctOptions(document.getElementById('qAcct'));
+  catOptions(document.getElementById('qCat'));
+  acctOptions(document.getElementById('sAcct'));
+  catOptions(document.getElementById('sCat'));
+}
+function barsHTML(rows){
+  var mx=0;rows.forEach(function(r){if(r.balance>mx)mx=r.balance;});
+  if(mx<=0)mx=1;
+  var low=forecastLow(rows);
+  return rows.map(function(r){
+    var h=Math.max(4,Math.round(r.balance/mx*100));
+    var cls=r.balance===low.balance?'low':(r.pay?'pay':'');
+    return '<div class="fbar '+cls+'" style="height:'+h+'%" title="'+fmtDate(r.date)+': '+money(r.balance)+'"></div>';
+  }).join('');
+}
+function renderForecast(){
+  var rows=forecast45();var low=forecastLow(rows);
+  document.getElementById('fBars').innerHTML=barsHTML(rows);
+  document.getElementById('fText').textContent='Lowest day: '+fmtDate(low.date)+' at '+money(low.balance)+'.';
+  var w=document.getElementById('fWarn');
+  if(low.balance<0){
+    w.innerHTML='<div class="warnbox">Heads up before it happens: your balance would go below zero around '+fmtDate(low.date)+' (lowest '+money(low.balance)+'). Move a bill, trim a spend, or shift a payday plan now, while there is still time.</div>';
+  }else if(low.balance<100){
+    w.innerHTML='<div class="warnbox">A tight stretch is coming around '+fmtDate(low.date)+' — your lowest balance is '+money(low.balance)+'. Worth a look before it arrives.</div>';
+  }else{ w.innerHTML=''; }
+  document.getElementById('simpleForecastBars').innerHTML=barsHTML(rows);
+  document.getElementById('simpleForecastText').textContent='Lowest day: '+fmtDate(low.date)+' at '+money(low.balance)+'.';
+}
+function renderPaycheck(){
+  document.getElementById('pfFreq').value=S.settings.freq;
+  document.getElementById('pfAmount').value=S.settings.takeHome;
+  document.getElementById('pfNext').value=S.settings.nextPayday;
+  document.getElementById('pfSave').value=S.settings.saveAside;
+  var list=paydayList(S.settings.freq,nextPaydayDate(),6).map(function(d){return fmtDate(d);}).join(' · ');
+  document.getElementById('paydayList').textContent='Next paydays: '+list;
+}
+function renderBills(){
+  var html=S.bills.map(function(b){
+    var btn=b.paid
+      ?'<button class="small" onclick="undoPaid(\''+b.id+'\')">Undo paid</button>'
+      :'<button class="small primary" onclick="markPaid(\''+b.id+'\')">Mark paid</button>';
+    return '<div class="rowline"><div><b>'+esc(b.name)+'</b><div class="sub">Due '+b.due+(b.paid?' · Paid':'')+'</div></div><div style="text-align:right"><span class="amt">'+money(b.amount)+'</span><br>'+btn+' <button class="small" onclick="deleteBill(\''+b.id+'\')">Delete</button></div></div>';
+  }).join('')||'<p class="note">No bills yet. Add your first one below.</p>';
+  document.getElementById('billList').innerHTML=html;
+  document.getElementById('simpleBills').innerHTML=S.bills.filter(function(b){return !b.paid;}).map(function(b){
+    return '<div class="rowline"><div><b>'+esc(b.name)+'</b><div class="sub">Due '+b.due+'</div></div><button class="small primary" onclick="markPaid(\''+b.id+'\')">Mark paid</button></div>';
+  }).join('')||'<p class="note">Nothing unpaid. Nice and clear.</p>';
+  renderCalendar();
+}
+var calShown=null;
+function renderCalendar(){
+  if(!calShown){var t=todayMid();calShown={y:t.getFullYear(),m:t.getMonth()};}
+  var y=calShown.y,m=calShown.m;
+  var names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calTitle').textContent=names[m]+' '+y;
+  var pays={};paydayList(S.settings.freq,nextPaydayDate(),60).forEach(function(d){pays[fmtDate(d)]=true;});
+  var bills={};S.bills.forEach(function(b){bills[b.due]=b;});
+  var first=new Date(y,m,1).getDay();var dim=new Date(y,m+1,0).getDate();
+  var cells=['S','M','T','W','T','F','S'].map(function(d){return '<div style="color:var(--muted)">'+d+'</div>';}).join('');
+  for(var i=0;i<first;i++)cells+='<div></div>';
+  for(var d=1;d<=dim;d++){
+    var key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cls='d'+(pays[key]?' pay':'')+(bills[key]?' due':'')+(bills[key]&&bills[key].paid?' paid':'');
+    cells+='<div class="'+cls+'">'+d+'</div>';
+  }
+  document.getElementById('calGrid').innerHTML=cells;
+}
+function calMove(n){calShown.m+=n;if(calShown.m>11){calShown.m=0;calShown.y++;}if(calShown.m<0){calShown.m=11;calShown.y--;}renderCalendar();}
+function renderSpends(){
+  var list=S.spends.slice().sort(function(a,b){return b.date<a.date?-1:1;});
+  document.getElementById('spendList').innerHTML=list.map(function(s){
+    return '<div class="rowline"><div><b>'+esc(s.cat)+'</b><div class="sub">'+s.date+' · '+esc(s.acct)+'</div></div><span class="amt">'+money(s.amount)+'</span></div>';
+  }).join('')||'<p class="note">Nothing logged yet.</p>';
+  var tot={};S.spends.forEach(function(s){tot[s.cat]=(tot[s.cat]||0)+s.amount;});
+  var parts=Object.keys(tot).map(function(k){return k+' '+money(tot[k]);});
+  document.getElementById('spendTotals').textContent=parts.length?('Category totals: '+parts.join(' · ')):'';
+}
+function renderEnvelopes(){
+  var ym=todayMid();var ymKey=ym.getFullYear()+'-'+String(ym.getMonth()+1).padStart(2,'0');
+  document.getElementById('envList').innerHTML=S.envelopes.map(function(e){
+    var spent=S.spends.filter(function(s){return s.cat===e.cat&&s.date.slice(0,7)===ymKey;}).reduce(function(a,s){return a+s.amount;},0);
+    var pct=e.cap>0?Math.min(100,Math.round(spent/e.cap*100)):0;
+    var over=spent>e.cap?'<div class="overnote">Over cap? That is information, not a failure. Move a little from another envelope or trim the next spend.</div>':'';
+    return '<div style="margin-bottom:14px"><div class="rowline"><div><b>'+esc(e.cat)+'</b></div><span class="amt">'+money(spent)+' of '+money(e.cap)+'</span></div><div class="barwrap"><div class="barfill" style="width:'+pct+'%"></div></div>'+over+'</div>';
+  }).join('')||'<p class="note">No envelopes yet.</p>';
+}
+function renderDebts(){
+  document.getElementById('debtList').innerHTML=S.debts.map(function(d){
+    return '<div class="rowline"><div><b>'+esc(d.name)+'</b><div class="sub">APR '+d.apr+'% · Minimum '+money(d.min)+'/month</div></div><span class="amt">'+money(d.balance)+'</span></div>';
+  }).join('')||'<p class="note">No debts. A clean slate.</p>';
+  var sim=debtSim();
+  if(!sim){document.getElementById('debtSim').textContent='';return;}
+  document.getElementById('debtExtraLabel').textContent='Extra: '+money(sim.extra)+' / month';
+  var fmt=function(r){var d=new Date(todayMid());d=new Date(d.getFullYear(),d.getMonth()+r.months,d.getDate());return fmtDate(d)+' ('+r.months+' months)';};
+  document.getElementById('debtSim').innerHTML=
+    'Snowball order: '+sim.snow.map(function(d){return esc(d.name);}).join(', ')+' — debt-free '+fmt(sim.s1)+' with '+money(sim.extra)+'/month extra (interest about '+money(sim.s1.interest)+', vs '+money(sim.s0.interest)+' without).<br>'+
+    'Avalanche order: '+sim.aval.map(function(d){return esc(d.name);}).join(', ')+' — debt-free '+fmt(sim.a1)+' with extra (interest about '+money(sim.a1.interest)+', vs '+money(sim.a0.interest)+' without).';
+}
+function ringSVG(pct){
+  var C=163.36;var off=C*(1-pct);
+  return '<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#2A2A2A" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#E8B84B" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"/><text x="32" y="36" text-anchor="middle" fill="#F5F5F5" font-size="13" font-weight="700">'+Math.round(pct*100)+'%</text></svg>';
+}
+function renderGoals(){
+  document.getElementById('goalList').innerHTML=S.goals.map(function(g){
+    var pct=g.target>0?Math.min(1,g.saved/g.target):0;
+    var fd=fundedByDate(g);
+    var note=g.saved>=g.target?'<div class="note">Reached — quietly celebrated.</div>':(fd?'<div class="note">Funded by: '+fmtDate(fd)+'</div>':'');
+    return '<div class="rowline"><div class="ring">'+ringSVG(pct)+'<div><b>'+esc(g.name)+'</b><div class="sub">'+money(g.saved)+' of '+money(g.target)+'</div>'+note+'</div></div></div>';
+  }).join('')||'<p class="note">No goals yet.</p>';
+}
+function renderWrapped(){
+  var w=wrapped();
+  var best=w.best?('Best month yet: '+w.best+' ('+money(w.bestAmt)+' spent).'):'No spending logged yet, so no best month to name.';
+  document.getElementById('wrappedBox').innerHTML=
+    '<div class="rowline"><div>Set aside for savings</div><span class="amt">'+money(w.kept)+'</span></div>'+
+    '<div class="rowline"><div>Spent since your last payday ('+fmtDate(w.from)+')</div><span class="amt">'+money(w.spent)+'</span></div>'+
+    '<div class="rowline"><div>No-spend days in that stretch</div><span>'+w.noSpend+'</span></div>'+
+    '<div class="rowline"><div>'+best+'</div></div>';
+}
+function renderBackup(){
+  var lb=S.settings.lastBackup;
+  document.getElementById('backupInfo').textContent=lb?('Last backup: '+lb+'.'):('No backup exported yet.');
+  var warn=document.getElementById('backupWarn');
+  var old=!lb||dayDiff(parseD(lb),todayMid())>30;
+  warn.innerHTML=old?'<div class="warnbox">Backup reminder: your last backup is more than 30 days old, or you have never exported one. Exporting takes a few seconds.</div>':'';
+}
+function applySettings(){
+  document.body.classList.toggle('text2',S.settings.textSize===2);
+  document.body.classList.toggle('text3',S.settings.textSize===3);
+  document.body.classList.toggle('easy',!!S.settings.easyFont);
+  document.body.classList.toggle('hideamounts',!!S.settings.hideAmounts);
+  document.getElementById('setCur').value=S.settings.currency;
+  document.getElementById('setText').value=String(S.settings.textSize);
+  document.getElementById('easyBtn').textContent='Easy-read font: '+(S.settings.easyFont?'on':'off');
+  document.getElementById('hideBtn').textContent='Hide amounts: '+(S.settings.hideAmounts?'on':'off');
+}
+function renderAll(){
+  renderHero();renderForecast();renderPaycheck();renderBills();renderSpends();
+  renderEnvelopes();renderDebts();renderGoals();renderWrapped();renderBackup();applySettings();
+}
+
+function markPaid(id){var b=S.bills.find(function(x){return x.id===id;});if(b){b.paid=true;save();renderAll();}}
+function undoPaid(id){var b=S.bills.find(function(x){return x.id===id;});if(b){b.paid=false;save();renderAll();}}
+function deleteBill(id){S.bills=S.bills.filter(function(x){return x.id!==id;});save();renderAll();}
+function addBill(){
+  var n=document.getElementById('bName').value.trim();
+  var a=+document.getElementById('bAmt').value;
+  var d=document.getElementById('bDue').value;
+  if(!n||!(a>0)||!d){alert('Fill in the bill name, amount, and due date.');return;}
+  S.bills.push({id:uid(),name:n,amount:a,due:d,paid:false});save();renderAll();
+}
+function logSpend(amount,acct,cat,msgEl){
+  var a=S.accounts.find(function(x){return x.name===acct;});
+  if(!a){return;}
+  a.balance=Math.round((a.balance-amount)*100)/100;
+  S.spends.push({id:uid(),amount:amount,cat:cat,acct:acct,date:fmtDate(todayMid())});
+  save();renderAll();
+  if(msgEl)msgEl.textContent='Logged '+money(amount)+' from '+acct+'. New '+acct+' balance: '+money(a.balance)+'.';
+}
+function quickLog(){
+  var a=+document.getElementById('qAmt').value;
+  if(!(a>0)){alert('Enter an amount first.');return;}
+  logSpend(a,document.getElementById('qAcct').value,document.getElementById('qCat').value,document.getElementById('quickMsg'));
+}
+function simpleLog(){
+  var a=+document.getElementById('sAmt').value;
+  if(!(a>0)){alert('Enter an amount first.');return;}
+  logSpend(a,document.getElementById('sAcct').value,document.getElementById('sCat').value,document.getElementById('sMsg'));
+}
+function toggleSimple(){
+  var on=!document.body.classList.contains('simple');
+  document.body.classList.toggle('simple',on);
+  document.getElementById('simpleBtn').textContent=on?'Full dashboard':'Simple view';
+  if(!on){['simplePanelLog','simplePanelBills','simplePanelForecast'].forEach(function(id){document.getElementById(id).style.display='none';});}
+}
+function showSimplePanel(which){
+  ['simplePanelLog','simplePanelBills','simplePanelForecast'].forEach(function(id){document.getElementById(id).style.display='none';});
+  var map={log:'simplePanelLog',bills:'simplePanelBills',forecast:'simplePanelForecast'};
+  document.getElementById(map[which]).style.display='block';
+}
+function runWhatIf(){
+  var a=+document.getElementById('wiAmt').value;
+  if(!(a>0)){alert('Enter a purchase amount first.');return;}
+  var r=whatIf(a);
+  document.getElementById('wiOut').textContent='With a '+money(a)+' purchase, your Safe to Spend would become '+money(r.safe)+' a day, and your 45-day low would move to '+money(r.low)+' on '+fmtDate(r.lowDate)+'. Nothing has been spent yet — this is only a preview.';
+}
+function changeFreq(){S.settings.freq=document.getElementById('pfFreq').value;save();renderAll();}
+function savePaycheck(){
+  S.settings.takeHome=+document.getElementById('pfAmount').value||0;
+  S.settings.nextPayday=document.getElementById('pfNext').value||S.settings.nextPayday;
+  S.settings.saveAside=+document.getElementById('pfSave').value||0;
+  save();renderAll();
+  document.getElementById('pfMsg').textContent='Paycheck details saved.';
+}
+function addDebt(){
+  var n=document.getElementById('dName').value.trim();
+  var b=+document.getElementById('dBal').value,a=+document.getElementById('dApr').value,m=+document.getElementById('dMin').value;
+  if(!n||!(b>0)){alert('Fill in the debt name and balance.');return;}
+  S.debts.push({id:uid(),name:n,balance:b,apr:a||0,min:m||0});save();renderAll();
+}
+function addGoal(){
+  var n=document.getElementById('gName').value.trim();
+  var t=+document.getElementById('gTarget').value,s=+document.getElementById('gSaved').value,mo=+document.getElementById('gMonthly').value;
+  if(!n||!(t>0)){alert('Fill in the goal name and target.');return;}
+  S.goals.push({id:uid(),name:n,target:t,saved:s||0,monthly:mo||0});save();renderAll();
+}
+function download(name,text,ctype){
+  var blob=new Blob([text],{type:ctype||'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+}
+function doBackupExport(){
+  S.settings.lastBackup=fmtDate(todayMid());save();renderBackup();
+  download('safespends-payday-backup.json',JSON.stringify(S,null,2));
+}
+function doCsvExport(){
+  var rows=[['date','category','account','amount']];
+  S.spends.forEach(function(s){rows.push([s.date,s.cat,s.acct,s.amount]);});
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
+  download('safespends-payday-spends.csv',csv,'text/csv');
+}
+function doBackupImport(ev){
+  var f=ev.target.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){try{var obj=JSON.parse(rd.result);if(obj&&obj.settings){S=obj;S.settings.lastBackup=fmtDate(todayMid());save();renderAll();}}catch(e){alert('That file could not be read as a backup.');}};
+  rd.readAsText(f);
+}
+function changeCurrency(){S.settings.currency=document.getElementById('setCur').value;save();renderAll();}
+function changeTextSize(){S.settings.textSize=+document.getElementById('setText').value;save();applySettings();}
+function toggleEasy(){S.settings.easyFont=!S.settings.easyFont;save();applySettings();}
+function toggleHide(){S.settings.hideAmounts=!S.settings.hideAmounts;save();applySettings();}
+function clearAll(){
+  if(!confirm('Clear everything on this device?'))return;
+  S={settings:{takeHome:0,freq:'biweekly',nextPayday:fmtDate(addDays(todayMid(),14)),saveAside:0,currency:S.settings.currency,textSize:S.settings.textSize,easyFont:S.settings.easyFont,hideAmounts:S.settings.hideAmounts,lastBackup:null},
+    accounts:[{id:'a-check',name:'Checking',balance:0}],bills:[],spends:[],envelopes:[],debts:[],goals:[],cats:['Groceries','Fuel','Fun','Bills','Other']};
+  save();renderAll();
+}
+function goSection(id){
+  if(document.body.classList.contains('simple')){toggleSimple();}
+  closeSheet();
+  var el=document.getElementById(id);
+  if(el && el.scrollIntoView){el.scrollIntoView({behavior:'smooth',block:'start'});}
+  document.querySelectorAll('[data-nav]').forEach(function(a){a.classList.toggle('on',a.getAttribute('data-nav')===id);});
+}
+function openSheet(){document.getElementById('sheet').classList.add('open');document.getElementById('sheetOverlay').classList.add('open');}
+function closeSheet(){document.getElementById('sheet').classList.remove('open');document.getElementById('sheetOverlay').classList.remove('open');}
+document.querySelectorAll('[data-nav]').forEach(function(a){
+  a.addEventListener('click',function(e){e.preventDefault();goSection(a.getAttribute('data-nav'));});
+});
+document.querySelectorAll('[data-log]').forEach(function(b){
+  b.addEventListener('click',function(){closeSheet();if(document.body.classList.contains('simple')){toggleSimple();}var h=document.getElementById('sec-safe');if(h && h.scrollIntoView){h.scrollIntoView({behavior:'smooth',block:'start'});}var q=document.getElementById('qAmt');if(q){q.focus();}});
+});
+renderAll();
+</script>
+</body>
+</html>
